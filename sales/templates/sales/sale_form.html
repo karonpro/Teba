@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="card">
+  <div class="card-title">{{ view.object|yesno:"Edit Sales Entry,Add Sales Entry" }}</div>
+  <form method="post" id="salesForm" class="grid">
+    {% csrf_token %}
+    {{ form.non_field_errors }}
+    <label>Date {{ form.date }}</label>
+    <label>Opening Cash {{ form.opening_cash }}</label>
+    <label>Customer Balance {{ form.customer_balance }}</label>
+    <label>Wholesale {{ form.wholesale }}</label>
+    <label>Retail Sales {{ form.retail_sale }}</label>
+    <label>Daily Expenses {{ form.expenses }}</label>
+    <label>Bank Deposit {{ form.bank_deposit }}</label>
+
+    <div class="calc">
+      <div><strong>Daily Total (auto):</strong> <span id="daily_total">0.00</span></div>
+      <div><strong>Cash Difference (auto):</strong> <span id="cash_difference">0.00</span></div>
+      <div><small>Net Cash After Deposit:</small> <span id="net_after_deposit">0.00</span></div>
+    </div>
+
+    <button class="btn" style="grid-column: 1 / -1">Save</button>
+  </form>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  function val(id){const el=document.getElementById(id); return parseFloat(el?.value || '0') || 0;}
+  function fmt(n){return (Math.round(n*100)/100).toFixed(2);}
+  function recalc(){
+    const wholesale = val('id_wholesale');
+    const retail = val('id_retail_sale');
+    const cust = val('id_customer_balance');
+    const opening = val('id_opening_cash');
+    const expenses = val('id_expenses');
+    const deposit = val('id_bank_deposit');
+    const daily_total = wholesale + retail + cust;
+    const cash_diff = opening + daily_total - expenses; // per user formula
+    const net_after = cash_diff - deposit;
+    document.getElementById('daily_total').textContent = fmt(daily_total);
+    document.getElementById('cash_difference').textContent = fmt(cash_diff);
+    document.getElementById('net_after_deposit').textContent = fmt(net_after);
+  }
+  const ids = ['id_wholesale','id_retail_sale','id_customer_balance','id_opening_cash','id_expenses','id_bank_deposit'];
+  ids.forEach(i=>{ const el = document.getElementById(i); if(el){ el.addEventListener('input', recalc); } });
+  window.addEventListener('load', recalc);
+</script>
+{% endblock %}

@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block title %}Locations{% endblock %}
+{% block content %}
+<div class="card">
+  <div class="card-title d-flex justify-content-between align-items-center">
+    <span>Locations</span>
+    <a href="{% url 'sales:location_add' %}" class="btn btn-success btn-sm">+ Add Location</a>
+  </div>
+  <form class="grid" method="get">
+    <label>Search
+      <input type="text" name="q" value="{{ q }}" placeholder="Location name">
+    </label>
+    <div style="align-self:end">
+      <button class="btn btn-primary">Filter</button>
+      <a href="{% url 'sales:locations' %}" class="btn btn-secondary">Reset</a>
+    </div>
+  </form>
+  <div class="table-responsive">
+    <table class="table">
+      <thead><tr><th>Name</th><th>Address</th><th>Actions</th></tr></thead>
+      <tbody>
+        {% for l in locations %}
+        <tr>
+          <td>{{ l.name }}</td>
+          <td>{{ l.address|default:"—" }}</td>
+          <td>
+            <a class="btn btn-sm btn-outline-primary" href="{% url 'sales:location_edit' l.id %}">Edit</a>
+            <a class="btn btn-sm btn-outline-danger" href="{% url 'sales:location_delete' l.id %}">Delete</a>
+          </td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="3">No locations yet.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

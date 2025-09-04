@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="card login-card">
+  <h2 class="card-title">Login</h2>
+  <form method="post">
+    {% csrf_token %}
+    <div class="grid">
+      <label>Username
+        <input type="text" name="username" autofocus required>
+      </label>
+      <label>Password
+        <input type="password" name="password" required>
+      </label>
+    </div>
+    <button class="btn">Login</button>
+    {% if form.errors %}
+      <p class="error">Invalid username or password</p>
+    {% endif %}
+  </form>
+</div>
+{% endblock %}

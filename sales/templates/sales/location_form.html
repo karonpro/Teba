@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block title %}{% if create %}Add Location{% else %}Edit Location{% endif %}{% endblock %}
+{% block content %}
+<div class="card p-3">
+  <h4 class="mb-3">{% if create %}Add Location{% else %}Edit: {{ obj.name }}{% endif %}</h4>
+  <form method="post">{% csrf_token %}
+    <div class="grid">
+      <label>Name
+        <input type="text" name="name" value="{{ obj.name|default:'' }}" required>
+      </label>
+      <label>Address
+        <textarea name="address" rows="3">{{ obj.address|default:'' }}</textarea>
+      </label>
+    </div>
+    <div class="mt-3">
+      <button class="btn btn-primary" type="submit">Save</button>
+      <a href="{% url 'sales:locations' %}" class="btn btn-secondary">Cancel</a>
+    </div>
+  </form>
+</div>
+{% endblock %}

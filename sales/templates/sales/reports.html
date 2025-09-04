@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% load humanize %}
+{% block title %}Reports{% endblock %}
+{% block content %}
+<div class="card">
+  <div class="card-title">Reports</div>
+  <form class="grid" method="get">
+    <label>Start Date
+      <input type="date" name="start" value="{{ params.start }}">
+    </label>
+    <label>End Date
+      <input type="date" name="end" value="{{ params.end }}">
+    </label>
+    <label>Location
+      <select name="location">
+        <option value="">All locations</option>
+        {% for l in locations %}
+        <option value="{{ l.id }}" {% if params.location == l.id %}selected{% endif %}>{{ l.name }}</option>
+        {% endfor %}
+      </select>
+    </label>
+    <div style="align-self:end">
+      <button class="btn btn-primary">Apply</button>
+      <a href="{% url 'sales:reports' %}" class="btn btn-secondary">Reset</a>
+    </div>
+  </form>
+
+  <div class="grid" style="grid-template-columns: repeat(3, minmax(0,1fr)); gap: 1rem;">
+    <div class="stat-card">
+      <h3>Total Wholesale</h3>
+      <div class="stat-value">{{ agg.total_wholesale|default:0|floatformat:2 }}</div>
+    </div>
+    <div class="stat-card">
+      <h3>Total Retail</h3>
+      <div class="stat-value">{{ agg.total_retail|default:0|floatformat:2 }}</div>
+    </div>
+    <div class="stat-card">
+      <h3>Total Expenses</h3>
+      <div class="stat-value">{{ agg.total_expenses|default:0|floatformat:2 }}</div>
+    </div>
+    <div class="stat-card">
+      <h3>Deposits</h3>
+      <div class="stat-value">{{ agg.total_deposits|default:0|floatformat:2 }}</div>
+    </div>
+    <div class="stat-card">
+      <h3>Daily Total</h3>
+      <div class="stat-value">{{ agg.total_daily|default:0|floatformat:2 }}</div>
+    </div>
+  </div>
+</div>
+{% endblock %}

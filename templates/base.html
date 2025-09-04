@@ -1,0 +1,40 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Teba Paint Center - Sales</title>
+  <link rel="stylesheet" href="{% static 'css/style.css' %}">
+</head>
+<body>
+  <header class="hdr">
+    <div class="hdr-brand">Teba Paint Center</div>
+    <nav class="hdr-nav">
+      {% if user.is_authenticated %}
+        <a href="{% url 'sales:list' %}">Dashboard</a>
+        <a href="{% url 'sales:add' %}">Add Entry</a>
+        <a href="{% url 'logout' %}">Logout</a>
+      {% else %}
+        <a href="{% url 'login' %}">Login</a>
+      {% endif %}
+    </nav>
+  </header>
+  <main class="container">
+    
+<nav class="topbar">
+  <a href="{% url 'sales:list' %}">Sales</a>
+  <a href="{% url 'sales:reports' %}">Reports</a>
+  <a href="{% url 'sales:locations' %}">Locations</a>
+  <a href="/admin/auth/user/">Users</a>
+  <a href="/admin/">Settings</a>
+</nav>
+
+{% block content %}{% endblock %}
+  </main>
+  <footer class="ftr">
+    <small>© {{ now|date:"Y" }} Teba Paint Center</small>
+  </footer>
+  {% block scripts %}{% endblock %}
+</body>
+</html>

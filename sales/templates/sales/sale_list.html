@@ -1,0 +1,85 @@
+{% extends "base.html" %}
+{% load humanize %}
+{% block content %}
+<div class="stats">
+  <div class="stat-card"><h3>Total Sales</h3><div class="stat-value">{{ agg.total_daily|default:0|floatformat:2 }}</div><div class="stat-sub">All-time revenue</div></div>
+  <div class="stat-card"><h3>Current Month</h3><div class="stat-value">{{ month_sales|floatformat:2 }}</div><div class="stat-sub">Revenue this month</div></div>
+  <div class="stat-card"><h3>Average Daily</h3><div class="stat-value">{{ avg_daily|floatformat:2 }}</div><div class="stat-sub">Per day average</div></div>
+  <div class="stat-card"><h3>Customer Balances</h3><div class="stat-value">{{ agg.total_customer_balance|default:0|floatformat:2 }}</div><div class="stat-sub">Total credit sales</div></div>
+</div>
+
+<div class="card">
+  <div class="card-title">Filter Records</div>
+  <form class="grid" method="get">
+    <label>Start Date
+      <input type="date" name="start" value="{{ params.start }}">
+    </label>
+    <label>End Date
+      <input type="date" name="end" value="{{ params.end }}">
+    </label>
+    <label>Search
+      <input type="text" name="q" placeholder="Search..." value="{{ params.q }}">
+    </label>
+    <div class="btn-group">
+      <button class="btn">Apply</button>
+      <a class="btn secondary" href="{% url 'sales:list' %}">Reset</a>
+      <a class="btn" href="{% url 'sales:export_csv' %}?start={{ params.start }}&end={{ params.end }}&q={{ params.q }}">Download CSV</a>
+      <a class="btn danger" href="{% url 'sales:clear_all' %}" onclick="return confirm('Delete ALL your records?')">Clear All Data</a>
+    </div>
+  </form>
+</div>
+
+<div class="card">
+  <div class="card-title">Sales Records <span id="recordCount">({{ record_count }} records)</span></div>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Date</th>
+          <th>Opening Cash</th>
+          <th>Customer Balance</th>
+          <th>Wholesale</th>
+          <th>Retail</th>
+          <th>Expenses</th>
+          <th>Bank Deposit</th>
+          <th>Cash Difference</th>
+          <th>Daily Total</th>
+          <th>Net After Deposit</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for r in rows %}
+        <tr>
+          <td>{{ r.date }}</td>
+          <td>{{ r.opening_cash|floatformat:2 }}</td>
+          <td>{{ r.customer_balance|floatformat:2 }}</td>
+          <td>{{ r.wholesale|floatformat:2 }}</td>
+          <td>{{ r.retail_sale|floatformat:2 }}</td>
+          <td>{{ r.expenses|floatformat:2 }}</td>
+          <td>{{ r.bank_deposit|floatformat:2 }}</td>
+          <td class="{% if r.cash_difference < 0 %}negative{% elif r.cash_difference > 0 %}positive{% endif %}">{{ r.cash_difference|floatformat:2 }}</td>
+          <td>{{ r.daily_total|floatformat:2 }}</td>
+          <td>{{ r.net_cash_after_deposit|floatformat:2 }}</td>
+          <td>
+            <a class="btn tiny" href="{% url 'sales:edit' r.pk %}">Edit</a>
+            <a class="btn tiny danger" href="{% url 'sales:delete' r.pk %}" onclick="return confirm('Delete this entry?')">Delete</a>
+          </td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="11">No records yet. <a href="{% url 'sales:add' %}">Add your first entry</a>.</td></tr>
+        {% endfor %}
+      </tbody>
+      <tfoot>
+        <tr>
+          <td colspan="7">Grand Totals</td>
+          <td class="{% if agg.total_diff < 0 %}negative{% elif agg.total_diff > 0 %}positive{% endif %}">{{ agg.total_diff|default:0|floatformat:2 }}</td>
+          <td>{{ agg.total_daily|default:0|floatformat:2 }}</td>
+          <td>{{ agg.total_deposits|default:0|floatformat:2 }}</td>
+          <td></td>
+        </tr>
+      </tfoot>
+    </table>
+  </div>
+</div>
+{% endblock %}
