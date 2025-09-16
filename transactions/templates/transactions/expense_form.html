@@ -1,0 +1,46 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="card p-3">
+  <h3>Add Expense</h3>
+
+  <form method="post">
+    {% csrf_token %}
+
+    {{ form.non_field_errors }}
+
+    <div class="mb-3">
+      {{ form.name.label_tag }}
+      {{ form.name }}
+      {{ form.name.errors }}
+    </div>
+
+    <div class="mb-3">
+      {{ form.location.label_tag }}
+      {{ form.location }}
+      {{ form.location.errors }}
+    </div>
+
+    <div class="mb-3">
+      {{ form.amount.label_tag }}
+      {{ form.amount }}
+      {{ form.amount.errors }}
+    </div>
+
+    <!-- Editable Date Field -->
+    <div class="mb-3">
+      {{ form.date.label_tag }}
+      {{ form.date }}
+      {{ form.date.errors }}
+    </div>
+
+    <div class="mb-3">
+      {{ form.notes.label_tag }}
+      {{ form.notes }}
+      {{ form.notes.errors }}
+    </div>
+
+    <button class="btn btn-primary" type="submit">Save</button>
+    <a class="btn btn-secondary" href="{% url 'transactions:expenses_list' %}">Cancel</a>
+  </form>
+</div>
+{% endblock %}

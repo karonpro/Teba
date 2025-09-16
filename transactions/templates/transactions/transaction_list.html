@@ -1,0 +1,124 @@
+{% extends 'base.html' %}
+{% load custom_filters %}
+{% block content %}
+<div class="card p-3">
+
+  <!-- Header -->
+  <div class="d-flex justify-content-between align-items-center mb-2">
+    <h3>Transactions — Period Filter</h3>
+    <div><a class="btn btn-primary" href="{% url 'transactions:add' %}">+ New</a></div>
+  </div>
+
+  <!-- Filter Form -->
+  <form method="get" class="row g-2 mb-3">
+    <div class="col-auto">
+      <input type="date" name="start_date" value="{{ request.GET.start_date|default:'' }}" class="form-control" placeholder="Start date">
+    </div>
+    <div class="col-auto">
+      <input type="date" name="end_date" value="{{ request.GET.end_date|default:'' }}" class="form-control" placeholder="End date">
+    </div>
+    <div class="col-auto">
+      <input type="text" name="q" value="{{ request.GET.q|default:'' }}" placeholder="Search notes" class="form-control">
+    </div>
+    <div class="col-auto">
+      <select name="location" class="form-select">
+        <option value="">All locations</option>
+        {% for loc in locations %}
+        <option value="{{ loc.id }}" {% if selected_location == loc.id|stringformat:'s' %}selected{% endif %}>{{ loc.name }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="col-auto">
+      <button class="btn btn-secondary" type="submit">Filter</button>
+    </div>
+  </form>
+
+  <!-- Totals Section -->
+  {% if totals %}
+  <div class="row text-center mb-3">
+    <div class="col-md-3">
+      <div class="p-2 bg-success text-white rounded">Total Sales: {{ totals.sales|floatformat:2 }}</div>
+    </div>
+    <div class="col-md-3">
+      <div class="p-2 bg-danger text-white rounded">Total Cashout: {{ totals.cashout|floatformat:2 }}</div>
+    </div>
+    <div class="col-md-3">
+      <div class="p-2 bg-info text-white rounded">Total Difference: {{ totals.difference|floatformat:2 }}</div>
+    </div>
+    <div class="col-md-3">
+      <div class="p-2 bg-warning text-dark rounded">Total Less/Excess: {{ totals.less_excess|floatformat:2 }}</div>
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- Transactions Table -->
+  <table class="table table-dark table-striped">
+    <thead>
+      <tr>
+        <th>Date</th>
+        <th>Location</th>
+        <th>Total Sales</th>
+        <th>Total Cashout</th>
+        <th>Difference</th>
+        <th>Less/Excess</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for r in rows %}
+      <tr>
+        <td>{{ r.date }}</td>
+        <td>{{ r.location.name|default:'-' }}</td>
+        <td><span class='badge bg-success'>{{ r.total_sales|floatformat:2 }}</span></td>
+        <td><span class='badge bg-danger'>{{ r.total_cashout|floatformat:2 }}</span></td>
+        <td>{{ r.difference|floatformat:2 }}</td>
+        <td>{{ r.less_excess|floatformat:2 }}</td>
+        <td>
+          <a class='btn btn-sm btn-outline-light' href='{% url "transactions:edit" r.id %}'>Edit</a>
+          <a class='btn btn-sm btn-danger' href='{% url "transactions:delete" r.id %}'>Delete</a>
+        </td>
+      </tr>
+      {% empty %}
+      <tr><td colspan='7'>No transactions</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  <!-- Chart Section -->
+  {% if totals %}
+  <div class="card mt-4 p-3">
+    <h5 class="mb-3">Less vs Excess vs Balanced</h5>
+    <canvas id="lessExcessChart"></canvas>
+  </div>
+  {% endif %}
+
+</div>
+
+{% if totals %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+  const ctx = document.getElementById('lessExcessChart').getContext('2d');
+  new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: ['Less/Excess', 'Difference', 'Sales vs Cashout'],
+      datasets: [{
+        label: 'Totals',
+        data: [
+          {{ totals.less_excess|default_if_none:0|floatformat:"2" }},
+          {{ totals.difference|default_if_none:"0"|floatformat:"2" }},
+          {{ totals.sales|default_if_none:"0"|floatformat:"2" }} - {{ totals.cashout|default_if_none:"0"|floatformat:"2" }}
+        ],
+        backgroundColor: ['#f39c12', '#3498db', '#2ecc71']
+      }]
+    },
+    options: {
+      responsive: true,
+      plugins: {
+        legend: { display: false }
+      }
+    }
+  });
+</script>
+{% endif %}
+{% endblock %}

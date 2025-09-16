@@ -1,0 +1,56 @@
+{% extends 'base.html' %}
+{% load custom_filters %}
+
+{% block content %}
+<div class="card p-3">
+    <h3>Customer Details</h3>
+
+    <!-- Customer Info -->
+    <div class="mb-3">
+        <strong>Name:</strong> {{ customer.name }} <br>
+        <strong>Phone:</strong> {{ customer.phone|default:"-" }} <br>
+        <strong>Email:</strong> {{ customer.email|default:"-" }} <br>
+        <strong>TIN:</strong> {{ customer.tin|default:"-" }} <br>
+        <strong>Supply:</strong> {{ customer.supply|floatformat:2 }} <br>
+        <strong>Balance:</strong> {{ customer.balance|floatformat:2 }} <br>
+        <strong>Last Payment:</strong> {{ last_payment_date|date:"Y-m-d"|default:"-" }}
+    </div>
+
+    <!-- Transactions Table -->
+    <h5>Transactions</h5>
+    <table class="table table-dark table-striped">
+        <thead>
+            <tr>
+                <th>Date</th>
+                <th>Notes</th>
+                <th>Paid</th>
+                <th>Debt</th>
+                <th>Cash</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for t in transactions %}
+            <tr>
+                <td>{{ t.date|date:"Y-m-d" }}</td>
+                <td>{{ t.notes|default:"-" }}</td>
+                <td>{{ t.paid|floatformat:2 }}</td>
+                <td>{{ t.debt|floatformat:2 }}</td>
+                <td>{{ t.cash|floatformat:2 }}</td>
+                <td>
+                    <a href="{% url 'transactions:edit' t.id %}" class="btn btn-primary btn-sm">Edit</a>
+                    <a href="{% url 'transactions:delete' t.id %}" class="btn btn-danger btn-sm">Delete</a>
+                </td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="6">No transactions found for this customer.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <!-- Back Button -->
+    <a href="{% url 'transactions:customers' %}" class="btn btn-light mt-2">Back to Customers</a>
+</div>
+{% endblock %}
