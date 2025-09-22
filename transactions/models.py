@@ -2,33 +2,57 @@ from django.db import models
 from django.utils import timezone
 from django.contrib.auth import get_user_model
 from core.models import Location
-
+from django.contrib.auth.models import User
 User = get_user_model()
-
 
 class Customer(models.Model):
     name = models.CharField(max_length=255)
-    tin = models.CharField(max_length=50, blank=True, null=True)
     phone = models.CharField(max_length=20, blank=True, null=True)
     email = models.EmailField(blank=True, null=True)
     address = models.TextField(blank=True, null=True)
-    location = models.ForeignKey(
-        Location, on_delete=models.SET_NULL, null=True, blank=True, related_name='customers'
-    )
+    location = models.ForeignKey(Location, on_delete=models.SET_NULL, null=True, blank=True)
+    tin = models.CharField(max_length=50, blank=True, null=True)
     supply = models.DecimalField(max_digits=12, decimal_places=2, default=0)
     balance = models.DecimalField(max_digits=12, decimal_places=2, default=0)
     created_at = models.DateTimeField(auto_now_add=True)
+
+    @property
+    def total_supply(self):
+        return sum(h.amount for h in self.supply_history.all())
+
+    @property
+    def total_payment(self):
+        return sum(p.amount for p in self.payments.all())
+
+    @property
+    def last_payment(self):
+        return self.payments.order_by('-date').first()
+
+    @property
+    def balance_color(self):
+        if self.balance > 1000:
+            return 'green'
+        elif 0 < self.balance <= 1000:
+            return 'yellow'
+        else:
+            return 'red'
 
     def __str__(self):
         return self.name
 
 
+
 class Payment(models.Model):
-    CHOICES = [('cash', 'Cash'), ('bank', 'Bank'), ('mobile', 'Mobile Money')]
+    PAYMENT_METHODS = [
+        ('cash', 'Cash'),
+        ('bank', 'Bank'),
+        ('mobile', 'Mobile Money')
+    ]
     customer = models.ForeignKey(Customer, on_delete=models.CASCADE, related_name='payments')
     amount = models.DecimalField(max_digits=12, decimal_places=2)
-    method = models.CharField(max_length=20, choices=CHOICES)
+    method = models.CharField(max_length=20, choices=PAYMENT_METHODS)
     notes = models.CharField(max_length=255, blank=True)
+    
     date = models.DateField(default=timezone.now)
 
     def save(self, *args, **kwargs):
@@ -89,3 +113,19 @@ class ExpenseName(models.Model):
 
     def __str__(self):
         return self.name
+
+class SupplyHistory(models.Model):
+    customer = models.ForeignKey(Customer, on_delete=models.CASCADE, related_name='supply_history')
+    amount = models.DecimalField(max_digits=12, decimal_places=2)
+    added_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
+    date = models.DateTimeField(auto_now_add=True)
+    notes = models.TextField(blank=True, null=True)
+
+    def save(self, *args, **kwargs):
+        is_new = self.pk is None
+        super().save(*args, **kwargs)
+        if is_new:
+            # Only update customer supply/balance when a new record is added
+            self.customer.supply += self.amount
+            self.customer.balance += self.amount
+            self.customer.save()

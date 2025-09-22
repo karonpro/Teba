@@ -1,17 +1,29 @@
 from django import forms
-from .models import Transaction, Customer, Payment, Expense
+from .models import Customer, Payment, Expense, Transaction, SupplyHistory
 
 
+# ---------------------------
+# Customer Form
+# ---------------------------
 class CustomerForm(forms.ModelForm):
     class Meta:
         model = Customer
-        fields = ['name', 'tin', 'phone', 'email', 'address', 'location', 'supply', 'balance']
+        fields = ['name', 'phone', 'email', 'address', 'location', 'tin', 'supply', 'balance']
         widgets = {
-            'address': forms.Textarea(attrs={'rows': 3}),
+            'name': forms.TextInput(attrs={'class': 'form-control'}),
+            'phone': forms.TextInput(attrs={'class': 'form-control'}),
+            'email': forms.EmailInput(attrs={'class': 'form-control'}),
+            'address': forms.Textarea(attrs={'rows': 2, 'class': 'form-control'}),
+            'location': forms.Select(attrs={'class': 'form-select'}),
+            'tin': forms.TextInput(attrs={'class': 'form-control'}),
+            'supply': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),
+            'balance': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),
         }
 
 
-
+# ---------------------------
+# Payment Form
+# ---------------------------
 class PaymentForm(forms.ModelForm):
     class Meta:
         model = Payment
@@ -25,40 +37,30 @@ class PaymentForm(forms.ModelForm):
         }
 
 
-from django import forms
-from .models import Expense
-
+# ---------------------------
+# Expense Form
+# ---------------------------
 class ExpenseForm(forms.ModelForm):
     class Meta:
         model = Expense
-        fields = ['name', 'notes', 'amount', 'location', 'date']  # ✅ add date
+        fields = ['name', 'notes', 'amount', 'location', 'date']
         widgets = {
-            'name': forms.TextInput(attrs={'placeholder': 'Enter expense name'}),
-            'notes': forms.Textarea(attrs={'rows': 2}),
-            'amount': forms.NumberInput(attrs={'step': '0.01'}),
-            'location': forms.TextInput(attrs={'placeholder': 'Enter location'}),
-            'date': forms.DateInput(attrs={'type': 'date'}),  # ✅ HTML date picker
+            'name': forms.TextInput(attrs={'placeholder': 'Enter expense name', 'class': 'form-control'}),
+            'notes': forms.Textarea(attrs={'rows': 2, 'class': 'form-control'}),
+            'amount': forms.NumberInput(attrs={'step': '0.01', 'class': 'form-control'}),
+            'location': forms.TextInput(attrs={'placeholder': 'Enter location', 'class': 'form-control'}),
+            'date': forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}),
         }
 
 
+# ---------------------------
+# Transaction Form
+# ---------------------------
 class TransactionForm(forms.ModelForm):
-    # Computed fields (readonly display only)
-    total_sales = forms.DecimalField(
-        label="Total Sales", required=False, disabled=True,
-        decimal_places=2, max_digits=12
-    )
-    total_cashout = forms.DecimalField(
-        label="Total Cashout", required=False, disabled=True,
-        decimal_places=2, max_digits=12
-    )
-    difference = forms.DecimalField(
-        label="Difference", required=False, disabled=True,
-        decimal_places=2, max_digits=12
-    )
-    less_excess = forms.DecimalField(
-        label="Less/Excess", required=False, disabled=True,
-        decimal_places=2, max_digits=12
-    )
+    total_sales = forms.DecimalField(label="Total Sales", required=False, disabled=True, decimal_places=2, max_digits=12)
+    total_cashout = forms.DecimalField(label="Total Cashout", required=False, disabled=True, decimal_places=2, max_digits=12)
+    difference = forms.DecimalField(label="Difference", required=False, disabled=True, decimal_places=2, max_digits=12)
+    less_excess = forms.DecimalField(label="Less/Excess", required=False, disabled=True, decimal_places=2, max_digits=12)
 
     class Meta:
         model = Transaction
@@ -66,7 +68,6 @@ class TransactionForm(forms.ModelForm):
             'date', 'location', 'opening_balance', 'customer_balance',
             'paid', 'wholesale', 'debt', 'cash', 'accounts', 'expenses',
             'notes',
-            # readonly totals
             'total_sales', 'total_cashout', 'difference', 'less_excess'
         ]
         widgets = {
@@ -85,26 +86,32 @@ class TransactionForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-
-        # Populate readonly totals if editing an existing transaction
         if self.instance and self.instance.pk:
             self.fields['total_sales'].initial = self.instance.total_sales
             self.fields['total_cashout'].initial = self.instance.total_cashout
             self.fields['difference'].initial = self.instance.difference
             self.fields['less_excess'].initial = self.instance.less_excess
 
-from django import forms
-from .models import Expense
 
-class ExpenseForm(forms.ModelForm):
+# ---------------------------
+# Add Supply Form
+# ---------------------------
+class AddSupplyForm(forms.ModelForm):
     class Meta:
-        model = Expense
-        fields = ['name', 'notes', 'amount', 'location', 'date']  # ✅ add date
+        model = SupplyHistory
+        fields = ['customer', 'amount', 'notes']
         widgets = {
-            'name': forms.TextInput(attrs={'placeholder': 'Enter expense name'}),
+            'customer': forms.HiddenInput(),  # set in view
             'notes': forms.Textarea(attrs={'rows': 2}),
-            'amount': forms.NumberInput(attrs={'step': '0.01'}),
-            'location': forms.TextInput(attrs={'placeholder': 'Enter location'}),
-            'date': forms.DateInput(attrs={'type': 'date'}),  # ✅ HTML date picker
         }
 
+from django import forms
+from .models import SupplyHistory
+
+class SupplyForm(forms.ModelForm):
+    class Meta:
+        model = SupplyHistory
+        fields = ['amount', 'notes']  # do NOT include customer here; set in view
+        widgets = {
+            'notes': forms.Textarea(attrs={'rows': 2}),
+        }

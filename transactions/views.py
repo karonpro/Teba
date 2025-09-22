@@ -154,11 +154,10 @@ def customer_delete(request, pk):
         return redirect('transactions:customers')
     return render(request, 'transactions/customer_confirm_delete.html', {'obj': obj})
 
-
-from django.shortcuts import render
-from .models import Customer, Payment
-from django.db.models import Q, Max
+from django.db.models import Sum, Max
 from datetime import datetime
+from django.shortcuts import render
+from .models import Customer, Transaction, Payment
 
 def customers_list(request):
     customers = Customer.objects.all()
@@ -195,8 +194,16 @@ def customers_list(request):
         except:
             pass
 
+    # --- Totals after filtering ---
+    total_supply = customers.aggregate(total_supply=Sum('supply'))['total_supply'] or 0
+    total_payment = customers.aggregate(total_payment=Sum('payments__amount'))['total_payment'] or 0
+    total_balance = sum(c.balance for c in customers)
+
     context = {
         'customers': customers,
+        'total_supply': total_supply,
+        'total_payment': total_payment,
+        'total_balance': total_balance,
         'request': request,
     }
     return render(request, 'transactions/customers_list.html', context)
@@ -220,21 +227,28 @@ from .models import Customer, Transaction
 from django.db.models import Sum
 
 def customer_detail(request, pk):
-    # Get the customer object
     customer = get_object_or_404(Customer, pk=pk)
 
-    # Get all transactions for this customer, newest first
+    # Transactions for this customer
     transactions = Transaction.objects.filter(customer=customer).order_by('-date')
 
-    # Optional: compute totals
-    total_paid = transactions.aggregate(total_paid=Sum('paid'))['total_paid'] or 0
-    total_debt = transactions.aggregate(total_debt=Sum('debt'))['total_debt'] or 0
+    # Supply history
+    supply_history = customer.supply_history.all().order_by('-date')
+
+    # Last payment object
+    last_payment = customer.last_payment  # Using property from Customer model
+
+    # Totals
+    total_paid = customer.total_payment  # Using property from Customer model
+    total_supply = customer.total_supply  # Using property from Customer model
 
     context = {
         'customer': customer,
         'transactions': transactions,
+        'supply_history': supply_history,
+        'last_payment': last_payment,
         'total_paid': total_paid,
-        'total_debt': total_debt,
+        'total_supply': total_supply,
     }
     return render(request, 'transactions/customer_detail.html', context)
 
@@ -428,6 +442,66 @@ def transaction_report(request):
         'start': start,
         'end': end,
     })
+
+# views.py
+from django.shortcuts import render, get_object_or_404, redirect
+from django.contrib.auth.decorators import login_required
+from django.contrib import messages
+from .models import Customer, SupplyHistory  # ✅ correct
+from .forms import SupplyForm
+
+
+@login_required
+def add_supply(request, customer_id):
+    customer = get_object_or_404(Customer, pk=customer_id)
+
+    if request.method == "POST":
+        form = SupplyForm(request.POST)
+        if form.is_valid():
+            supply = form.save(commit=False)
+            supply.customer = customer
+            supply.save()
+
+           
+            messages.success(request, f"Supply of {supply.amount} added for {customer.name}.")
+            return redirect("transactions:customer_detail", pk=customer.id)
+    else:
+        form = SupplyForm()
+
+    context = {
+        "customer": customer,
+        "form": form,
+    }
+    return render(request, "transactions/add_supply.html", context)
+
+
+import csv
+from django.http import HttpResponse
+from .models import Customer
+
+def export_customers_csv(request):
+    response = HttpResponse(content_type='text/csv')
+    response['Content-Disposition'] = 'attachment; filename="customers.csv"'
+
+    writer = csv.writer(response)
+    writer.writerow(['Name', 'Phone', 'Email', 'TIN', 'Supply', 'Balance'])
+
+    for customer in Customer.objects.all():
+        writer.writerow([customer.name, customer.phone, customer.email, customer.tin, customer.supply, customer.balance])
+
+    return response
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 # ---------------- Home ----------------
