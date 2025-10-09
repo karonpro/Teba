@@ -1,46 +1,43 @@
-{% extends 'base.html' %}
+{% extends "base.html" %}
+
 {% block content %}
-<div class="card p-3">
-  <h3>Add Expense</h3>
-
-  <form method="post">
-    {% csrf_token %}
-
-    {{ form.non_field_errors }}
-
-    <div class="mb-3">
-      {{ form.name.label_tag }}
-      {{ form.name }}
-      {{ form.name.errors }}
+<div class="container mt-5">
+  <div class="card shadow-lg border-0 rounded-4">
+    <div class="card-header bg-primary text-white py-3 rounded-top">
+      <h4 class="mb-0"><i class="bi bi-cash-stack me-2"></i>Add Expense</h4>
     </div>
 
-    <div class="mb-3">
-      {{ form.location.label_tag }}
-      {{ form.location }}
-      {{ form.location.errors }}
-    </div>
+    <div class="card-body p-4">
+      <form method="post" class="needs-validation" novalidate>
+        {% csrf_token %}
+        <div class="mb-3">
+          {{ form.as_p }}
+        </div>
 
-    <div class="mb-3">
-      {{ form.amount.label_tag }}
-      {{ form.amount }}
-      {{ form.amount.errors }}
+        <div class="d-flex justify-content-end mt-4">
+          <a href="{% url 'transactions:expenses' %}" class="btn btn-secondary me-2">
+            <i class="bi bi-x-circle me-1"></i> Cancel
+          </a>
+          <button type="submit" class="btn btn-success">
+            <i class="bi bi-save2 me-1"></i> Save Expense
+          </button>
+        </div>
+      </form>
     </div>
-
-    <!-- Editable Date Field -->
-    <div class="mb-3">
-      {{ form.date.label_tag }}
-      {{ form.date }}
-      {{ form.date.errors }}
-    </div>
-
-    <div class="mb-3">
-      {{ form.notes.label_tag }}
-      {{ form.notes }}
-      {{ form.notes.errors }}
-    </div>
-
-    <button class="btn btn-primary" type="submit">Save</button>
-    <a class="btn btn-secondary" href="{% url 'transactions:expenses_list' %}">Cancel</a>
-  </form>
+  </div>
 </div>
+
+<style>
+  .card {
+    max-width: 650px;
+    margin: auto;
+    border-radius: 15px;
+  }
+  .form-control {
+    border-radius: 10px;
+  }
+  .btn {
+    border-radius: 10px;
+  }
+</style>
 {% endblock %}

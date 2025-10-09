@@ -96,22 +96,28 @@ class TransactionForm(forms.ModelForm):
 # ---------------------------
 # Add Supply Form
 # ---------------------------
-class AddSupplyForm(forms.ModelForm):
-    class Meta:
-        model = SupplyHistory
-        fields = ['customer', 'amount', 'notes']
-        widgets = {
-            'customer': forms.HiddenInput(),  # set in view
-            'notes': forms.Textarea(attrs={'rows': 2}),
-        }
-
 from django import forms
 from .models import SupplyHistory
+from django.utils import timezone
 
 class SupplyForm(forms.ModelForm):
     class Meta:
         model = SupplyHistory
-        fields = ['amount', 'notes']  # do NOT include customer here; set in view
+        fields = ['amount', 'notes', 'date']  # include date so it is editable
         widgets = {
-            'notes': forms.Textarea(attrs={'rows': 2}),
+            'amount': forms.NumberInput(attrs={'class': 'form-control', 'placeholder': 'Enter amount'}),
+            'notes': forms.Textarea(attrs={'class': 'form-control', 'rows': 3, 'placeholder': 'Optional notes'}),
+            'date': forms.DateTimeInput(attrs={'type': 'datetime-local', 'class': 'form-control'}),
         }
+
+
+    
+
+    class Meta:
+        model = SupplyHistory
+        fields = ['amount', 'date', 'notes']  # include date here
+        widgets = {
+            'amount': forms.NumberInput(attrs={'class': 'form-control'}),
+            'notes': forms.Textarea(attrs={'class': 'form-control', 'rows': 2}),
+        }
+

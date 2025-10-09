@@ -15,3 +15,12 @@ def sum_field(queryset, field_name):
         except (TypeError, ValueError):
             total += 0
     return total
+
+
+@register.filter
+def abs_value(value):
+    """Return the absolute (positive) value of a number."""
+    try:
+        return abs(float(value))
+    except (TypeError, ValueError):
+        return 0

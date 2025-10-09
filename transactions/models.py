@@ -118,7 +118,7 @@ class SupplyHistory(models.Model):
     customer = models.ForeignKey(Customer, on_delete=models.CASCADE, related_name='supply_history')
     amount = models.DecimalField(max_digits=12, decimal_places=2)
     added_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
-    date = models.DateTimeField(auto_now_add=True)
+    date = models.DateTimeField(default=timezone.now)
     notes = models.TextField(blank=True, null=True)
 
     def save(self, *args, **kwargs):

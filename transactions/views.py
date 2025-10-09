@@ -18,27 +18,37 @@ from .forms import (
 
 # ---------------- Transactions ----------------
 
+from datetime import datetime
+from django.db.models import Q, Sum
+from django.utils import timezone
+from django.shortcuts import render
+from transactions.models import Transaction
+from core.models import Location
+
 def transaction_list(request):
-    from datetime import datetime
     q = request.GET.get('q', '').strip()
-    location = request.GET.get('location') or ''
+    location = request.GET.get('location', '')
     start_date = request.GET.get('start_date')
     end_date = request.GET.get('end_date')
 
+    # Base queryset
     qs = Transaction.objects.all().order_by('-created_at')
 
+    # --- Filters ---
     if start_date:
         try:
             start = datetime.strptime(start_date, "%Y-%m-%d").date()
             qs = qs.filter(date__gte=start)
-        except:
+        except ValueError:
             pass
+
     if end_date:
         try:
             end = datetime.strptime(end_date, "%Y-%m-%d").date()
             qs = qs.filter(date__lte=end)
-        except:
+        except ValueError:
             pass
+
     if not start_date and not end_date:
         qs = qs.filter(date=timezone.localdate())
 
@@ -48,6 +58,7 @@ def transaction_list(request):
     if q:
         qs = qs.filter(Q(notes__icontains=q))
 
+    # --- Totals ---
     totals_raw = qs.aggregate(
         paid=Sum('paid'),
         customer_balance=Sum('customer_balance'),
@@ -58,6 +69,8 @@ def transaction_list(request):
         expenses=Sum('expenses'),
         opening_balance=Sum('opening_balance'),
     )
+
+    # Replace None with 0
     for k, v in totals_raw.items():
         totals_raw[k] = v or 0
 
@@ -68,11 +81,20 @@ def transaction_list(request):
     totals["difference"] = totals["sales"] - totals["cashout"]
     totals["less_excess"] = totals["difference"] - totals_raw['opening_balance']
 
-    try:
-        from core.models import Location
-        locations = Location.objects.all()
-    except:
-        locations = []
+    # --- Separate Less and Excess ---
+    total_less = 0
+    total_excess = 0
+    for row in qs:
+        row_diff = (row.paid + row.customer_balance + row.wholesale) - \
+                   (row.debt + row.cash + row.accounts + row.expenses)
+        less_excess = row_diff - (row.opening_balance or 0)
+        if less_excess < 0:
+            total_less += abs(less_excess)
+        elif less_excess > 0:
+            total_excess += less_excess
+
+    # --- Locations for filter dropdown ---
+    locations = Location.objects.all()
 
     return render(request, 'transactions/transaction_list.html', {
         'rows': qs,
@@ -81,7 +103,10 @@ def transaction_list(request):
         'selected_location': location,
         'start_date': start_date,
         'end_date': end_date,
+        'less_value': total_less,
+        'excess_value': total_excess,
     })
+
 
 
 def transaction_add(request):
@@ -275,20 +300,15 @@ from .forms import ExpenseForm
 from .models import Expense, ExpenseName
 
 def expense_add(request):
-    last_name = request.session.get('last_expense_name', '')
-
     if request.method == 'POST':
         form = ExpenseForm(request.POST)
         if form.is_valid():
-            expense = form.save()
-            request.session['last_expense_name'] = expense.name
-            return redirect('transactions:expenses_list')
+            expense = form.save(commit=False)
+            expense.added_by = request.user
+            expense.save()
+            return redirect('transactions:expenses')  # ✅ fixed name
     else:
-        initial_data = {}
-        if last_name:
-            initial_data['name'] = last_name
-        form = ExpenseForm(initial=initial_data)
-
+        form = ExpenseForm()
     return render(request, 'transactions/expense_form.html', {'form': form})
 
 def expenses_list(request):
@@ -491,6 +511,42 @@ def export_customers_csv(request):
 
     return response
 
+from django.shortcuts import render, get_object_or_404
+from .models import Transaction
+
+def view_transaction(request, id):
+    """
+    Display a single transaction details, similar layout to the transaction form.
+    """
+    transaction = get_object_or_404(Transaction, pk=id)
+
+    # Compute totals
+    total_sales = (transaction.paid or 0) + (transaction.customer_balance or 0) + (transaction.wholesale or 0)
+    total_cashout = (transaction.debt or 0) + (transaction.cash or 0) + (transaction.accounts or 0) + (transaction.expenses or 0)
+    difference = total_sales - total_cashout
+    less_excess = difference - (transaction.opening_balance or 0)
+
+    if less_excess > 0:
+        less_excess_status = f"Less {less_excess:.2f}"
+        less_excess_class = "bg-warning text-dark"
+    elif less_excess < 0:
+        less_excess_status = f"Excess {abs(less_excess):.2f}"
+        less_excess_class = "bg-danger text-white"
+    else:
+        less_excess_status = "Balanced"
+        less_excess_class = "bg-success text-white"
+
+    context = {
+        'transaction': transaction,
+        'total_sales': total_sales,
+        'total_cashout': total_cashout,
+        'difference': difference,
+        'less_excess_status': less_excess_status,
+        'less_excess_class': less_excess_class,
+    }
+
+    return render(request, 'transactions/view_transaction.html', context)
+
 
 
 
@@ -511,3 +567,4 @@ from django.contrib.auth.decorators import login_required
 @login_required
 def home(request):
     return render(request, "transactions/home.html")  # must include 'transactions/'!
+

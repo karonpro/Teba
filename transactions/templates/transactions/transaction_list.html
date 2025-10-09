@@ -1,124 +1,165 @@
 {% extends 'base.html' %}
-{% load custom_filters %}
+{% load humanize %}
+{% load custom_filters %}  {# Loads your abs_value filter #}
 {% block content %}
-<div class="card p-3">
+
+<div class="card p-4 shadow-lg border-0 bg-dark text-light">
 
   <!-- Header -->
-  <div class="d-flex justify-content-between align-items-center mb-2">
-    <h3>Transactions — Period Filter</h3>
-    <div><a class="btn btn-primary" href="{% url 'transactions:add' %}">+ New</a></div>
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <h3 class="text-info fw-bold">💰 Transactions Overview</h3>
+    <a class="btn btn-success" href="{% url 'transactions:add' %}">
+      <i class="bi bi-plus-circle"></i> New Transaction
+    </a>
   </div>
 
   <!-- Filter Form -->
-  <form method="get" class="row g-2 mb-3">
-    <div class="col-auto">
-      <input type="date" name="start_date" value="{{ request.GET.start_date|default:'' }}" class="form-control" placeholder="Start date">
+  <form method="get" class="row g-2 mb-4">
+    <div class="col-md-2">
+      <input type="date" name="start_date" value="{{ request.GET.start_date|default:'' }}" class="form-control">
     </div>
-    <div class="col-auto">
-      <input type="date" name="end_date" value="{{ request.GET.end_date|default:'' }}" class="form-control" placeholder="End date">
+    <div class="col-md-2">
+      <input type="date" name="end_date" value="{{ request.GET.end_date|default:'' }}" class="form-control">
     </div>
-    <div class="col-auto">
-      <input type="text" name="q" value="{{ request.GET.q|default:'' }}" placeholder="Search notes" class="form-control">
+    <div class="col-md-3">
+      <input type="text" name="q" value="{{ request.GET.q|default:'' }}" placeholder="Search notes..." class="form-control">
     </div>
-    <div class="col-auto">
+    <div class="col-md-3">
       <select name="location" class="form-select">
-        <option value="">All locations</option>
+        <option value="">All Locations</option>
         {% for loc in locations %}
-        <option value="{{ loc.id }}" {% if selected_location == loc.id|stringformat:'s' %}selected{% endif %}>{{ loc.name }}</option>
+          <option value="{{ loc.id }}" {% if selected_location == loc.id|stringformat:'s' %}selected{% endif %}>
+            {{ loc.name }}
+          </option>
         {% endfor %}
       </select>
     </div>
-    <div class="col-auto">
-      <button class="btn btn-secondary" type="submit">Filter</button>
+    <div class="col-md-2 text-end">
+      <button class="btn btn-primary w-100" type="submit">Filter</button>
     </div>
   </form>
 
-  <!-- Totals Section -->
+  <!-- Totals Summary -->
   {% if totals %}
-  <div class="row text-center mb-3">
-    <div class="col-md-3">
-      <div class="p-2 bg-success text-white rounded">Total Sales: {{ totals.sales|floatformat:2 }}</div>
+  <div class="row text-center mb-4">
+    <div class="col-md-2 mb-2">
+      <div class="card bg-success text-white p-2 rounded shadow-sm">
+        <h6>Total Sales</h6>
+        <h5>{{ totals.sales|floatformat:2|intcomma }}</h5>
+      </div>
     </div>
-    <div class="col-md-3">
-      <div class="p-2 bg-danger text-white rounded">Total Cashout: {{ totals.cashout|floatformat:2 }}</div>
+    <div class="col-md-2 mb-2">
+      <div class="card bg-danger text-white p-2 rounded shadow-sm">
+        <h6>Total Cashout</h6>
+        <h5>{{ totals.cashout|floatformat:2|intcomma }}</h5>
+      </div>
     </div>
-    <div class="col-md-3">
-      <div class="p-2 bg-info text-white rounded">Total Difference: {{ totals.difference|floatformat:2 }}</div>
+    <div class="col-md-2 mb-2">
+      <div class="card bg-info text-white p-2 rounded shadow-sm">
+        <h6>Total Difference</h6>
+        <h5>{{ totals.difference|floatformat:2|intcomma }}</h5>
+      </div>
     </div>
-    <div class="col-md-3">
-      <div class="p-2 bg-warning text-dark rounded">Total Less/Excess: {{ totals.less_excess|floatformat:2 }}</div>
+    <div class="col-md-3 mb-2">
+      <div class="card bg-danger text-white p-2 rounded shadow-sm">
+        <h6>Total Less</h6>
+        <h5>{{ less_value|floatformat:2|intcomma }}</h5>
+      </div>
+    </div>
+    <div class="col-md-3 mb-2">
+      <div class="card bg-success text-white p-2 rounded shadow-sm">
+        <h6>Total Excess</h6>
+        <h5>{{ excess_value|floatformat:2|intcomma }}</h5>
+      </div>
     </div>
   </div>
   {% endif %}
 
   <!-- Transactions Table -->
-  <table class="table table-dark table-striped">
-    <thead>
-      <tr>
-        <th>Date</th>
-        <th>Location</th>
-        <th>Total Sales</th>
-        <th>Total Cashout</th>
-        <th>Difference</th>
-        <th>Less/Excess</th>
-        <th>Actions</th>
-      </tr>
-    </thead>
-    <tbody>
-      {% for r in rows %}
-      <tr>
-        <td>{{ r.date }}</td>
-        <td>{{ r.location.name|default:'-' }}</td>
-        <td><span class='badge bg-success'>{{ r.total_sales|floatformat:2 }}</span></td>
-        <td><span class='badge bg-danger'>{{ r.total_cashout|floatformat:2 }}</span></td>
-        <td>{{ r.difference|floatformat:2 }}</td>
-        <td>{{ r.less_excess|floatformat:2 }}</td>
-        <td>
-          <a class='btn btn-sm btn-outline-light' href='{% url "transactions:edit" r.id %}'>Edit</a>
-          <a class='btn btn-sm btn-danger' href='{% url "transactions:delete" r.id %}'>Delete</a>
-        </td>
-      </tr>
-      {% empty %}
-      <tr><td colspan='7'>No transactions</td></tr>
-      {% endfor %}
-    </tbody>
-  </table>
+  <div class="table-responsive">
+    <table class="table table-hover table-bordered align-middle text-light">
+      <thead class="table-secondary text-dark">
+        <tr>
+          <th>Date</th>
+          <th>Location</th>
+          <th>Total Sales</th>
+          <th>Total Cashout</th>
+          <th>Difference</th>
+          <th>Status (Less / Excess)</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for r in rows %}
+        <tr>
+          <td>{{ r.date }}</td>
+          <td>{{ r.location.name|default:"-" }}</td>
+          <td>{{ r.total_sales|floatformat:2|intcomma }}</td>
+          <td>{{ r.total_cashout|floatformat:2|intcomma }}</td>
+          <td>{{ r.difference|floatformat:2|intcomma }}</td>
+
+          <!-- Colored Less/Excess -->
+          <td>
+            {% if r.less_excess > 0 %}
+              <span class="badge bg-danger">Less: {{ r.less_excess|floatformat:2|intcomma }}</span>
+            {% elif r.less_excess < 0 %}
+              <span class="badge bg-success">Excess: {{ r.less_excess|abs_value|floatformat:2|intcomma }}</span>
+            {% else %}
+              <span class="badge bg-secondary">Balanced</span>
+            {% endif %}
+          </td>
+
+          <!-- Action buttons -->
+          <td>
+            <div class="btn-group">
+              <a class="btn btn-sm btn-outline-info" href="{% url 'transactions:view_transaction' r.id %}">View</a>
+              <a class="btn btn-sm btn-outline-warning" href="{% url 'transactions:edit' r.id %}">Edit</a>
+              <a class="btn btn-sm btn-outline-danger" href="{% url 'transactions:delete' r.id %}" onclick="return confirm('Delete this transaction?')">Delete</a>
+            </div>
+          </td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="7" class="text-center text-muted">No transactions found.</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
 
   <!-- Chart Section -->
   {% if totals %}
-  <div class="card mt-4 p-3">
-    <h5 class="mb-3">Less vs Excess vs Balanced</h5>
+  <div class="card mt-4 bg-secondary bg-opacity-25 p-3 shadow-sm">
+    <h5 class="mb-3 text-center">📊 Less vs Excess Summary</h5>
     <canvas id="lessExcessChart"></canvas>
   </div>
   {% endif %}
 
 </div>
 
+<!-- ChartJS -->
 {% if totals %}
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
-  const ctx = document.getElementById('lessExcessChart').getContext('2d');
-  new Chart(ctx, {
-    type: 'bar',
-    data: {
-      labels: ['Less/Excess', 'Difference', 'Sales vs Cashout'],
-      datasets: [{
-        label: 'Totals',
-        data: [
-          {{ totals.less_excess|default_if_none:0|floatformat:"2" }},
-          {{ totals.difference|default_if_none:"0"|floatformat:"2" }},
-          {{ totals.sales|default_if_none:"0"|floatformat:"2" }} - {{ totals.cashout|default_if_none:"0"|floatformat:"2" }}
-        ],
-        backgroundColor: ['#f39c12', '#3498db', '#2ecc71']
-      }]
-    },
-    options: {
-      responsive: true,
-      plugins: {
-        legend: { display: false }
-      }
-    }
-  });
+const ctx = document.getElementById('lessExcessChart');
+new Chart(ctx, {
+  type: 'bar',
+  data: {
+    labels: ['Less', 'Excess'],
+    datasets: [{
+      label: 'Amount',
+      data: [{{ less_value|default:0 }}, {{ excess_value|default:0 }}],
+      backgroundColor: ['#e74c3c', '#27ae60'],
+      borderRadius: 6
+    }]
+  },
+  options: {
+    responsive: true,
+    scales: { y: { beginAtZero: true } },
+    plugins: { legend: { display: false } }
+  }
+});
 </script>
 {% endif %}
+
 {% endblock %}
