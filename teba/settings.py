@@ -21,7 +21,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'core',
-    'transactions',
+    'transactions','django.contrib.humanize',
 ]
 
 MIDDLEWARE = [
